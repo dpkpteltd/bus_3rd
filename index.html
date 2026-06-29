@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bus 3rd — Always running late. Never just running.</title>
+  <meta name="description" content="Bus 3rd is a parody bus-arrivals app. Absurd timings, chope-a-seat with a tissue packet, a live map where the bus drives into the sea, and prank notifications. It's a joke. Don't use it to catch a real bus." />
+
+  <!-- Open Graph / social -->
+  <meta property="og:title" content="Bus 3rd — Always running late. Never just running." />
+  <meta property="og:description" content="A parody bus app. Late, but emotionally prepared." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="app-advert.png" />
+
+  <link rel="icon" type="image/png" href="app-icon.png" />
+
+  <!-- Fonts: Archivo (display), Hanken Grotesk (body), Space Mono (numbers/terminal) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      /* Brand — ported from the app's app_theme.dart */
+      --red: #E2231A;
+      --red-dark: #C81C13;
+      --purple: #6E2585;
+      --purple-light: #7A2A90;
+      --purple-dark: #5C1E70;
+      --amber: #FFB300;
+      --amber-dark: #C98A00;
+
+      --cream: #F4F1EA;
+      --card: #FFFFFF;
+      --dark-chip: #0A0A0A;
+
+      --ink: #1C1814;
+      --ink-soft: #6B6359;
+      --muted: #8A8178;
+      --faint: #B5ADA3;
+
+      --green: #1B9E4B;
+
+      --display: 'Archivo', system-ui, sans-serif;
+      --body: 'Hanken Grotesk', system-ui, sans-serif;
+      --mono: 'Space Mono', ui-monospace, monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--body);
+      color: var(--ink);
+      background: var(--cream);
+      line-height: 1.45;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: inherit; }
+
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+    /* ---- Logo lockup -------------------------------------------------- */
+    .logo {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 7px;
+      background: var(--dark-chip);
+      padding: 7px 13px;
+      border-radius: 9px;
+      border: 1px solid #303030;
+    }
+    .logo .bus {
+      font-family: var(--mono);
+      font-weight: 700;
+      color: var(--amber);
+      letter-spacing: 0.5px;
+    }
+    .logo .third {
+      font-family: var(--display);
+      font-weight: 900;
+      color: var(--red);
+      letter-spacing: -0.5px;
+    }
+
+    /* ---- Nav ---------------------------------------------------------- */
+    header.nav {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(244, 241, 234, 0.86);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+    }
+    .nav .wrap {
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px;
+    }
+    .nav .logo .bus { font-size: 18px; }
+    .nav .logo .third { font-size: 19px; }
+    .nav-links { display: flex; align-items: center; gap: 28px; }
+    .nav-links a {
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--ink-soft);
+      transition: color .15s;
+    }
+    .nav-links a:hover { color: var(--red); }
+    .nav-cta {
+      background: var(--red);
+      color: #fff !important;
+      padding: 9px 16px;
+      border-radius: 11px;
+      font-family: var(--display);
+      font-weight: 800;
+    }
+    @media (max-width: 720px) { .nav-links a:not(.nav-cta) { display: none; } }
+
+    /* ---- Hero --------------------------------------------------------- */
+    .hero {
+      background:
+        radial-gradient(120% 90% at 15% -10%, rgba(110,37,133,0.10), transparent 55%),
+        radial-gradient(120% 90% at 100% 0%, rgba(226,35,26,0.10), transparent 50%);
+      padding: 72px 0 64px;
+    }
+    .hero .wrap {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 48px;
+      align-items: center;
+    }
+    @media (max-width: 860px) {
+      .hero .wrap { grid-template-columns: 1fr; gap: 40px; text-align: center; }
+    }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-family: var(--mono); font-size: 12px; font-weight: 700;
+      color: var(--purple);
+      background: #F3E6F7;
+      padding: 6px 12px; border-radius: 999px;
+      border: 1px solid rgba(110,37,133,0.18);
+      margin-bottom: 22px;
+    }
+    .hero h1 {
+      font-family: var(--display);
+      font-weight: 900;
+      font-size: clamp(40px, 6vw, 68px);
+      line-height: 1.02;
+      letter-spacing: -1.5px;
+      margin-bottom: 20px;
+    }
+    .hero h1 .accent { color: var(--red); }
+    .hero p.lede {
+      font-size: 18px;
+      color: var(--ink-soft);
+      max-width: 520px;
+      margin-bottom: 14px;
+    }
+    @media (max-width: 860px) { .hero p.lede { margin-left: auto; margin-right: auto; } }
+    .hero p.sub {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 32px;
+    }
+
+    .btn-row { display: flex; gap: 14px; flex-wrap: wrap; }
+    @media (max-width: 860px) { .btn-row { justify-content: center; } }
+    .btn {
+      display: inline-flex; align-items: center; gap: 9px;
+      font-family: var(--display); font-weight: 800; font-size: 15px;
+      padding: 15px 24px; border-radius: 14px;
+      text-decoration: none; cursor: pointer; border: 0;
+      transition: transform .12s, box-shadow .12s;
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .btn-primary { background: var(--red); color: #fff; box-shadow: 0 8px 22px rgba(226,35,26,0.30); }
+    .btn-ghost { background: #fff; color: var(--ink); border: 1px solid rgba(0,0,0,0.10); }
+
+    .hero-art {
+      display: flex; justify-content: center;
+    }
+    .hero-art img {
+      width: 100%;
+      max-width: 360px;
+      border-radius: 28px;
+      box-shadow: 0 30px 70px rgba(28,24,20,0.28);
+    }
+
+    /* ---- Marquee ------------------------------------------------------ */
+    .marquee {
+      background: var(--dark-chip);
+      color: var(--amber);
+      font-family: var(--mono);
+      font-size: 13px;
+      padding: 13px 0;
+      overflow: hidden;
+      white-space: nowrap;
+      border-top: 1px solid #222;
+      border-bottom: 1px solid #222;
+    }
+    .marquee span {
+      display: inline-block;
+      padding-left: 100%;
+      animation: scroll 26s linear infinite;
+    }
+    @keyframes scroll { to { transform: translateX(-100%); } }
+
+    /* ---- Sections ----------------------------------------------------- */
+    section { padding: 84px 0; }
+    .section-head { text-align: center; max-width: 640px; margin: 0 auto 52px; }
+    .eyebrow {
+      font-family: var(--mono); font-size: 12px; font-weight: 700;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      color: var(--red); margin-bottom: 14px;
+    }
+    .section-head h2 {
+      font-family: var(--display); font-weight: 900;
+      font-size: clamp(30px, 4.5vw, 44px);
+      letter-spacing: -1px; line-height: 1.06; margin-bottom: 14px;
+    }
+    .section-head p { font-size: 17px; color: var(--ink-soft); }
+
+    /* ---- Feature grid ------------------------------------------------- */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 22px;
+    }
+    .feature {
+      background: var(--card);
+      border: 1px solid rgba(0,0,0,0.05);
+      border-radius: 20px;
+      padding: 28px;
+      transition: transform .15s, box-shadow .15s;
+    }
+    .feature:hover { transform: translateY(-4px); box-shadow: 0 18px 40px rgba(28,24,20,0.10); }
+    .feature .emoji {
+      font-size: 30px; display: inline-grid; place-items: center;
+      width: 56px; height: 56px; border-radius: 16px;
+      background: #FBE9E8; margin-bottom: 18px;
+    }
+    .feature:nth-child(2) .emoji { background: #F3E6F7; }
+    .feature:nth-child(3) .emoji { background: #FBF4DF; }
+    .feature:nth-child(4) .emoji { background: #E9F6EE; }
+    .feature:nth-child(5) .emoji { background: #FBE9E8; }
+    .feature:nth-child(6) .emoji { background: #F3E6F7; }
+    .feature h3 {
+      font-family: var(--display); font-weight: 800; font-size: 20px;
+      margin-bottom: 8px; letter-spacing: -0.3px;
+    }
+    .feature p { font-size: 14.5px; color: var(--ink-soft); }
+
+    /* ---- Arrivals board mockup --------------------------------------- */
+    .board-section { background: var(--cream); }
+    .board {
+      max-width: 560px; margin: 0 auto;
+      background: var(--card);
+      border-radius: 24px;
+      border: 1px solid rgba(0,0,0,0.06);
+      box-shadow: 0 24px 60px rgba(28,24,20,0.12);
+      overflow: hidden;
+    }
+    .board-top {
+      background: linear-gradient(180deg, var(--red), var(--red-dark));
+      color: #fff;
+      padding: 18px 22px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .board-top .stop { font-family: var(--display); font-weight: 800; font-size: 17px; }
+    .board-top .live {
+      font-family: var(--mono); font-size: 11px; font-weight: 700;
+      display: inline-flex; align-items: center; gap: 7px;
+      opacity: 0.92;
+    }
+    .live .dot {
+      width: 8px; height: 8px; border-radius: 50%; background: #7CE0A0;
+      animation: pulse 1.4s ease-in-out infinite;
+    }
+    @keyframes pulse { 50% { opacity: 0.25; } }
+
+    .arr {
+      display: flex; align-items: center; gap: 16px;
+      padding: 16px 22px;
+      border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+    .arr:last-child { border-bottom: 0; }
+    .plate {
+      flex: none;
+      width: 50px; height: 38px; border-radius: 10px;
+      display: grid; place-items: center;
+      font-family: var(--mono); font-weight: 700; font-size: 15px;
+      color: #fff;
+    }
+    .plate.red { background: var(--red); }
+    .plate.purple { background: var(--purple); }
+    .plate.ink { background: var(--ink); }
+    .arr .info { flex: 1; min-width: 0; }
+    .arr .dest { font-family: var(--display); font-weight: 700; font-size: 15.5px; }
+    .arr .sub { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+    .arr .when {
+      flex: none; text-align: right;
+      font-family: var(--mono); font-weight: 700; font-size: 14px;
+    }
+    .when.green { color: var(--green); }
+    .when.amber { color: var(--amber-dark); }
+    .when.muted { color: var(--muted); }
+    .when.red { color: var(--red); }
+    .when.ink { color: var(--ink); }
+
+    /* ---- Reviews ------------------------------------------------------ */
+    .reviews-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 22px;
+    }
+    .review {
+      background: var(--card);
+      border: 1px solid rgba(0,0,0,0.05);
+      border-radius: 20px;
+      padding: 24px;
+    }
+    .review .who { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .avatar {
+      width: 42px; height: 42px; border-radius: 50%;
+      display: grid; place-items: center;
+      color: #fff; font-family: var(--display); font-weight: 800; font-size: 14px;
+    }
+    .review .name { font-family: var(--display); font-weight: 800; font-size: 14.5px; }
+    .review .stars { color: var(--amber); font-size: 13px; letter-spacing: 1px; }
+    .review .quote { font-size: 14.5px; color: var(--ink-soft); font-style: italic; }
+
+    /* ---- Disclaimer --------------------------------------------------- */
+    .disclaimer {
+      background: var(--dark-chip);
+      color: #fff;
+    }
+    .disclaimer .wrap { max-width: 760px; text-align: center; }
+    .disclaimer .clown { font-size: 48px; margin-bottom: 18px; }
+    .disclaimer h2 {
+      font-family: var(--display); font-weight: 900; font-size: 34px;
+      letter-spacing: -0.8px; margin-bottom: 18px;
+    }
+    .disclaimer p {
+      font-size: 16px; color: rgba(255,255,255,0.72); line-height: 1.6;
+      margin-bottom: 14px;
+    }
+    .disclaimer .fine {
+      font-family: var(--mono); font-size: 12px;
+      color: rgba(255,255,255,0.34); margin-top: 22px;
+    }
+
+    /* ---- Footer ------------------------------------------------------- */
+    footer {
+      background: var(--cream);
+      border-top: 1px solid rgba(0,0,0,0.06);
+      padding: 48px 0 40px;
+    }
+    footer .wrap {
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 20px;
+    }
+    footer .tag { font-family: var(--body); font-style: italic; font-weight: 600; color: var(--ink-soft); font-size: 14px; margin-top: 12px; }
+    footer .meta { font-family: var(--mono); font-size: 11.5px; color: var(--muted); text-align: right; }
+    footer .meta a { color: var(--red); text-decoration: none; font-weight: 700; }
+  </style>
+</head>
+<body>
+
+  <!-- ===== Nav ===== -->
+  <header class="nav">
+    <div class="wrap">
+      <span class="logo"><span class="bus">BUS</span><span class="third">3rd</span></span>
+      <nav class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#board">Arrivals</a>
+        <a href="#reviews">Reviews</a>
+        <a href="#disclaimer" class="nav-cta">It's a joke →</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ===== Hero ===== -->
+  <section class="hero">
+    <div class="wrap">
+      <div class="hero-copy">
+        <span class="badge">🚌 Parody · Entertainment only</span>
+        <h1>Always running late.<br /><span class="accent">Never just running.</span></h1>
+        <p class="lede">
+          The bus app that tells you exactly what you already feared. Absurd arrival
+          times, seats you can chope with a tissue packet, and a "live" map where the
+          bus drives into the sea.
+        </p>
+        <p class="sub">v3.0 · still loading since 2019</p>
+        <div class="btn-row">
+          <a href="#features" class="btn btn-primary">See the gags →</a>
+          <a href="#disclaimer" class="btn btn-ghost">Wait, is this real?</a>
+        </div>
+      </div>
+      <div class="hero-art">
+        <img src="app-advert.png" alt="Bus 3rd app advert" />
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Marquee ===== -->
+  <div class="marquee">
+    <span>
+      &gt; Triangulating your disappointment… &nbsp; ● &nbsp; Asking the uncle… &nbsp; ● &nbsp;
+      Downloading more buses… &nbsp; ● &nbsp; Recalculating (badly)… &nbsp; ● &nbsp;
+      Bribing the bus captain… &nbsp; ● &nbsp; Generating false hope… &nbsp; ● &nbsp;
+      Waiting for 88. Still waiting… &nbsp; ● &nbsp; Consulting the void… &nbsp; ●
+    </span>
+  </div>
+
+  <!-- ===== Features ===== -->
+  <section id="features">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">The Features (the gags)</p>
+        <h2>Five tabs. Zero buses.</h2>
+        <p>Everything works beautifully. Nothing works the way you'd want.</p>
+      </div>
+      <div class="features">
+        <div class="feature">
+          <span class="emoji">🕐</span>
+          <h3>Arrivals board</h3>
+          <p>Live, chaotic countdowns. Negative minutes, <code>420m</code>, "soon™", "napping". All three of the 88 arrive together — as a treat.</p>
+        </div>
+        <div class="feature">
+          <span class="emoji">🗺️</span>
+          <h3>Live Map™</h3>
+          <p>A hand-painted map (no Google Maps, no API key) with a wandering bus. Recalculating… into the sea 🌊. Driver stopped for kaya toast.</p>
+        </div>
+        <div class="feature">
+          <span class="emoji">🧻</span>
+          <h3>Chope a seat</h3>
+          <p>Tap empty seats to reserve them with a tissue packet, lah. Random aunties steal your seat over time. As tradition demands.</p>
+        </div>
+        <div class="feature">
+          <span class="emoji">🔖</span>
+          <h3>Saved stops</h3>
+          <p>Save the routes you love most. "Saved 3 years ago. Still hoping." A monument to your optimism.</p>
+        </div>
+        <div class="feature">
+          <span class="emoji">🔔</span>
+          <h3>Prank notifications</h3>
+          <p>Local-only funny alerts. "Someone choped your seat with a tissue 🧻." "The bus is now a boat. Please bring floaties."</p>
+        </div>
+        <div class="feature">
+          <span class="emoji">🏳️</span>
+          <h3>Give Up</h3>
+          <p>The only honest button in the app. Confirm you've given up and receive your certificate of inner peace. Walk home (47 min).</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Arrivals board mockup ===== -->
+  <section id="board" class="board-section">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">Live arrivals (allegedly)</p>
+        <h2>Real-time disappointment</h2>
+        <p>A faithful preview of the board. Timings are fictional and intentionally inaccurate.</p>
+      </div>
+      <div class="board">
+        <div class="board-top">
+          <span class="stop">Your Stop · 99 nowhere</span>
+          <span class="live"><span class="dot"></span> LIVE</span>
+        </div>
+        <div class="arr">
+          <span class="plate red">88</span>
+          <span class="info">
+            <span class="dest">Toa Payoh Int</span>
+            <div class="sub">All 3 will arrive together. As a treat.</div>
+          </span>
+          <span class="when green">2 min (lies)</span>
+        </div>
+        <div class="arr">
+          <span class="plate red">L8</span>
+          <span class="info">
+            <span class="dest">Eventually</span>
+            <div class="sub">It is in the name. You knew this.</div>
+          </span>
+          <span class="when amber">~ ~ ~</span>
+        </div>
+        <div class="arr">
+          <span class="plate purple">M80</span>
+          <span class="info">
+            <span class="dest">Cancelled (vibes)</span>
+            <div class="sub">Last seen heading to the kopitiam.</div>
+          </span>
+          <span class="when muted">—</span>
+        </div>
+        <div class="arr">
+          <span class="plate red">969</span>
+          <span class="info">
+            <span class="dest">Woodlands Checkpoint</span>
+            <div class="sub">It is full. It is SO full. Bo space.</div>
+          </span>
+          <span class="when red">Arr</span>
+        </div>
+        <div class="arr">
+          <span class="plate ink">NR7</span>
+          <span class="info">
+            <span class="dest">Night Rider</span>
+            <div class="sub">Last bus left without you. Typical.</div>
+          </span>
+          <span class="when muted">Gone</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Reviews ===== -->
+  <section id="reviews">
+    <div class="wrap">
+      <div class="section-head">
+        <p class="eyebrow">★ 1.2 · 9,481 reviews</p>
+        <h2>Loved by no one. Used by everyone.</h2>
+        <p>Real reviews from fictional commuters.</p>
+      </div>
+      <div class="reviews-grid">
+        <div class="review">
+          <div class="who">
+            <span class="avatar" style="background:var(--red)">AD</span>
+            <div>
+              <div class="name">Auntie Doris, 61</div>
+              <div class="stars">★☆☆☆☆</div>
+            </div>
+          </div>
+          <p class="quote">"Wait 40 min for 88, when come got three buses together. Walao. One star still too generous."</p>
+        </div>
+        <div class="review">
+          <div class="who">
+            <span class="avatar" style="background:var(--purple)">UT</span>
+            <div>
+              <div class="name">Uncle Tan, 67</div>
+              <div class="stars">★★☆☆☆</div>
+            </div>
+          </div>
+          <p class="quote">"Driver see me running, still close door and smile. I know that man. We not friends anymore."</p>
+        </div>
+        <div class="review">
+          <div class="who">
+            <span class="avatar" style="background:var(--ink)">XM</span>
+            <div>
+              <div class="name">Xiao Ming, 23</div>
+              <div class="stars">★★★★★</div>
+            </div>
+          </div>
+          <p class="quote">"Used this app to plan my commute. Now I plan my funeral. 10/10 very realistic sia."</p>
+        </div>
+        <div class="review">
+          <div class="who">
+            <span class="avatar" style="background:var(--amber-dark)">Me</span>
+            <div>
+              <div class="name">Auntie Mei, 54</div>
+              <div class="stars">★☆☆☆☆</div>
+            </div>
+          </div>
+          <p class="quote">"App say 2 min. I aged 2 years. Bus 3rd indeed. My grandson grew up already."</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Disclaimer ===== -->
+  <section id="disclaimer" class="disclaimer">
+    <div class="wrap">
+      <div class="clown">🤡</div>
+      <h2>This is a joke.</h2>
+      <p>
+        Bus 3rd is a parody / comedy app for entertainment only. All bus timings,
+        routes, stops, seats and notifications are completely fictional and
+        intentionally inaccurate. <strong>Do NOT use this app to catch a real bus.</strong>
+      </p>
+      <p>
+        Bus 3rd is not affiliated with, endorsed by, or connected to any real transit
+        operator or government agency.
+      </p>
+      <p>
+        Privacy: no accounts, no analytics, no ads, no location tracking. Your settings
+        stay on your device. "Data Not Collected."
+      </p>
+      <p class="fine">no buses were harmed. none showed up either.</p>
+    </div>
+  </section>
+
+  <!-- ===== Footer ===== -->
+  <footer>
+    <div class="wrap">
+      <div>
+        <span class="logo"><span class="bus" style="font-size:16px">BUS</span><span class="third" style="font-size:17px">3rd</span></span>
+        <div class="tag">Late, but emotionally prepared.</div>
+      </div>
+      <div class="meta">
+        Bus 3rd Transit Co. · v1.0.0<br />
+        A parody app by <a href="https://github.com/dpkpteltd/bus_3rd">deployku</a><br />
+        © 2026 · all timings fictional
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
