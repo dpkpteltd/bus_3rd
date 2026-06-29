@@ -1,18 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'ai/ai_service.dart';
+
 /// App-wide flags, persisted with shared_preferences. No personal data is
-/// stored — only whether the parody disclaimer has been seen and whether the
-/// (local-only) prank notifications are enabled.
+/// stored — only whether the parody disclaimer has been seen, whether the
+/// (local-only) prank notifications are enabled, and whether the user has
+/// opted in to online AI mode.
 class AppState extends ChangeNotifier {
   static const _kPranks = 'pranks_enabled';
   static const _kSeenDisclaimer = 'seen_disclaimer';
+  static const _kAiOnline = 'ai_online';
 
   bool _pranksEnabled = true;
   bool _seenDisclaimer = false;
+  // Off by default: the app stays fully offline until the user opts in.
+  bool _aiOnline = false;
 
   bool get pranksEnabled => _pranksEnabled;
   bool get seenDisclaimer => _seenDisclaimer;
+  bool get aiOnline => _aiOnline;
+
+  /// Whether a backend was compiled in at all (controls showing the toggle).
+  bool get aiConfigured => AiService.instance.isConfigured;
 
   SharedPreferences? _prefs;
 
@@ -21,6 +31,8 @@ class AppState extends ChangeNotifier {
     final p = _prefs!;
     _pranksEnabled = p.getBool(_kPranks) ?? true;
     _seenDisclaimer = p.getBool(_kSeenDisclaimer) ?? false;
+    _aiOnline = p.getBool(_kAiOnline) ?? false;
+    AiService.instance.online = _aiOnline;
     notifyListeners();
   }
 
@@ -33,6 +45,13 @@ class AppState extends ChangeNotifier {
   void markDisclaimerSeen() {
     _seenDisclaimer = true;
     _prefs?.setBool(_kSeenDisclaimer, true);
+    notifyListeners();
+  }
+
+  void setAiOnline(bool value) {
+    _aiOnline = value;
+    AiService.instance.online = value;
+    _prefs?.setBool(_kAiOnline, value);
     notifyListeners();
   }
 }

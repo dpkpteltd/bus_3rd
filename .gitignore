@@ -43,3 +43,9 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# AI proxy (Supabase Edge Function)
+supabase/.temp/
+supabase/.branches/
+supabase/.env.local
+**/.env

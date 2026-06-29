@@ -16,8 +16,12 @@ const String kParodyDisclaimer =
     'transit operator or government agency.';
 
 const String kPrivacyStatement =
-    'Bus 3rd collects no personal data. There are no accounts, no analytics, no '
-    'ads, and no location tracking. Your settings stay on your device.';
+    'Bus 3rd has no accounts, no analytics, no ads, and no location tracking. '
+    'Your settings stay on your device.\n\n'
+    'By default the app is fully offline — nothing leaves your phone. If you turn '
+    'on "Online jokes" below, the text you type or generate (e.g. a destination '
+    'to roast, or your chat with the uncle) is sent to our AI service purely to '
+    'write the joke back to you. It is not stored, sold, or used to identify you.';
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
@@ -56,6 +60,20 @@ class AboutScreen extends StatelessWidget {
             builder: (context, _) => _card(
               child: Column(
                 children: [
+                  if (appState.aiConfigured) ...[
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      activeColor: AppColors.red,
+                      title: Text('Online jokes (AI)', style: T.body(14.5, weight: FontWeight.w700)),
+                      subtitle: Text(
+                        'Off = fully offline. On = sends typed text to our AI service to write fresher jokes.',
+                        style: T.body(12, color: AppColors.muted),
+                      ),
+                      value: appState.aiOnline,
+                      onChanged: appState.setAiOnline,
+                    ),
+                    const Divider(height: 1),
+                  ],
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
                     activeColor: AppColors.red,

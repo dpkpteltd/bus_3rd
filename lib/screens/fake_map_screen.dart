@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../data/fake_data.dart';
+import '../services/ai/ai_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_header.dart';
 import '../widgets/map_painter.dart';
@@ -27,9 +28,13 @@ class _FakeMapScreenState extends State<FakeMapScreen>
   @override
   void initState() {
     super.initState();
-    _captionTimer = Timer.periodic(const Duration(seconds: 4), (_) {
-      if (mounted) setState(() => _caption = FakeData.randomMapGag());
-    });
+    _refreshCaption();
+    _captionTimer = Timer.periodic(const Duration(seconds: 4), (_) => _refreshCaption());
+  }
+
+  Future<void> _refreshCaption() async {
+    final gag = await AiService.instance.mapGag();
+    if (mounted) setState(() => _caption = gag);
   }
 
   @override
