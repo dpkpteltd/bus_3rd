@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
-import '../data/fake_data.dart';
+import 'ai/ai_service.dart';
 
 /// Wraps flutter_local_notifications for the prank (local-only) notifications.
 /// Nothing is sent to or from any server — these are scheduled on-device.
@@ -69,14 +69,21 @@ class NotificationService {
         macOS: DarwinNotificationDetails(),
       );
 
-  /// Fire an immediate prank notification with random funny text.
+  /// Fire an immediate prank notification. Pulls fresh text from the AI service
+  /// (live when online, on-device template otherwise) so pranks don't repeat.
   Future<void> showPrankNow() async {
+    final prank = await AiService.instance.prank();
+    await showCustomPrank(prank.title, prank.body);
+  }
+
+  /// Fire a specific prank notification (used by "Roast my commute").
+  Future<void> showCustomPrank(String title, String body) async {
     if (!_initialised) await init();
     try {
       await _plugin.show(
         id: DateTime.now().millisecondsSinceEpoch.remainder(100000),
-        title: FakeData.randomPrankTitle(),
-        body: FakeData.randomPrankBody(),
+        title: title,
+        body: body,
         notificationDetails: _details,
       );
     } catch (e) {

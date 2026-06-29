@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../services/ai/ai_models.dart';
+import '../services/ai/ai_service.dart';
 import '../theme/app_theme.dart';
 
 /// The "Give Up" flow — the app's tongue-in-cheek logout. Confirm that you have
@@ -17,6 +19,8 @@ class GiveUpScreen extends StatefulWidget {
 class _GiveUpScreenState extends State<GiveUpScreen>
     with SingleTickerProviderStateMixin {
   bool _done = false;
+  AiCertificate? _cert;
+  bool _regenerating = false;
   late final AnimationController _float =
       AnimationController(vsync: this, duration: const Duration(seconds: 4))
         ..repeat(reverse: true);
@@ -25,6 +29,24 @@ class _GiveUpScreenState extends State<GiveUpScreen>
   void dispose() {
     _float.dispose();
     super.dispose();
+  }
+
+  Future<void> _giveUp() async {
+    setState(() => _done = true);
+    final cert = await AiService.instance.certificate();
+    if (mounted) setState(() => _cert = cert);
+  }
+
+  Future<void> _regenerate() async {
+    if (_regenerating) return;
+    setState(() => _regenerating = true);
+    final cert = await AiService.instance.certificate();
+    if (mounted) {
+      setState(() {
+        _cert = cert;
+        _regenerating = false;
+      });
+    }
   }
 
   Widget _floating(String emoji, double size) {
@@ -72,7 +94,7 @@ class _GiveUpScreenState extends State<GiveUpScreen>
               child: SizedBox(
                 width: double.infinity,
                 child: FilledButton(
-                  onPressed: () => setState(() => _done = true),
+                  onPressed: _giveUp,
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.red,
                     padding: const EdgeInsets.all(20),
@@ -116,19 +138,28 @@ class _GiveUpScreenState extends State<GiveUpScreen>
             const Spacer(),
             _floating('🕊️', 70),
             const SizedBox(height: 10),
-            Text('You chose peace',
+            Text(_cert?.title ?? 'You chose peace',
                 textAlign: TextAlign.center,
                 style: T.display(32, color: Colors.white, weight: FontWeight.w900).copyWith(height: 1.05)),
             const SizedBox(height: 14),
             ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 300),
               child: Text(
-                'You have been removed from the bus queue and the rat race. Congratulations.',
+                _cert?.body ?? 'You have been removed from the bus queue and the rat race. Congratulations.',
                 textAlign: TextAlign.center,
                 style: T.body(15, color: Colors.white.withValues(alpha: 0.72), height: 1.55),
               ),
             ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 12),
+            TextButton.icon(
+              onPressed: _regenerate,
+              icon: _regenerating
+                  ? const SizedBox(height: 14, width: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : Icon(Icons.refresh, size: 16, color: Colors.white.withValues(alpha: 0.7)),
+              label: Text('New certificate',
+                  style: T.body(12.5, color: Colors.white.withValues(alpha: 0.7), weight: FontWeight.w600)),
+            ),
+            const SizedBox(height: 18),
             _statsCard(),
             const Spacer(),
             ConstrainedBox(
@@ -188,8 +219,8 @@ class _GiveUpScreenState extends State<GiveUpScreen>
         ),
         child: Column(
           children: [
-            row('Buses missed today', '4'),
-            row('Minutes you will never get back', '∞'),
+            row(_cert?.stat1Label ?? 'Buses missed today', _cert?.stat1Value ?? '4'),
+            row(_cert?.stat2Label ?? 'Minutes you will never get back', _cert?.stat2Value ?? '∞'),
             row('Inner peace', 'UNLOCKED', valueColor: AppColors.greenLight, border: false, valueSize: 13),
           ],
         ),

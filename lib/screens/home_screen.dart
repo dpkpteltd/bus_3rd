@@ -4,9 +4,13 @@ import 'package:flutter/material.dart';
 
 import '../data/fake_data.dart';
 import '../models/bus_models.dart';
+import '../services/ai/ai_models.dart';
+import '../services/ai/ai_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_header.dart';
 import 'about_screen.dart';
+import 'roast_screen.dart';
+import 'uncle_chat_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -21,10 +25,57 @@ class _HomeScreenState extends State<HomeScreen> {
   int _feedCount = 3;
   Timer? _feedTimer;
 
+  // AI overlays. Null = use the static FakeData defaults.
+  List<AiArrival>? _aiArrivals;
+  List<AiReview>? _aiReviews;
+  AiLatePrediction? _aiLate;
+  bool _loadingLate = false;
+  bool _loadingBoard = false;
+
   @override
   void dispose() {
     _feedTimer?.cancel();
     super.dispose();
+  }
+
+  Future<void> _recalcLate() async {
+    setState(() {
+      _lateIdx++; // keeps the offline fallback visibly changing too
+      _loadingLate = true;
+    });
+    final p = await AiService.instance.latePrediction();
+    if (mounted) setState(() {
+      _aiLate = p;
+      _loadingLate = false;
+    });
+  }
+
+  Future<void> _refreshBoard() async {
+    if (_loadingBoard) return;
+    setState(() => _loadingBoard = true);
+    final arrivals = await AiService.instance.arrivals(count: FakeData.buses.length);
+    final reviews = await AiService.instance.reviews(count: FakeData.reviews.length);
+    if (mounted) setState(() {
+      _aiArrivals = arrivals;
+      _aiReviews = reviews;
+      _loadingBoard = false;
+    });
+  }
+
+  List<Review> get _currentReviews {
+    final ai = _aiReviews;
+    if (ai == null) return FakeData.reviews;
+    const palette = [AppColors.red, AppColors.purple, AppColors.ink, AppColors.amberDark];
+    return [
+      for (var i = 0; i < ai.length; i++)
+        Review(
+          initials: ai[i].initials,
+          name: ai[i].name,
+          stars: ai[i].stars,
+          avatarBg: palette[i % palette.length],
+          quote: ai[i].quote,
+        ),
+    ];
   }
 
   void _toggleBreakdown() {
@@ -60,7 +111,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 _feedCard(),
               ] else
                 _predictorCard(),
-              _sectionRow('Next arrivals', 'allegedly'),
+              _aiHubCard(context),
+              _arrivalsHeader(),
               for (var i = 0; i < FakeData.buses.length; i++)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
@@ -71,7 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Text('What aunty & uncle say',
                     style: T.display(17, weight: FontWeight.w900, spacing: 0)),
               ),
-              for (final r in FakeData.reviews)
+              for (final r in _currentReviews)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
                   child: _reviewCard(r),
@@ -122,10 +174,84 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // ---- AI hub ----------------------------------------------------------------
+
+  Widget _aiHubCard(BuildContext context) {
+    Widget btn(String emoji, String label, VoidCallback onTap) => Expanded(
+          child: InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: onTap,
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              decoration: BoxDecoration(
+                color: AppColors.cream,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
+              ),
+              child: Column(
+                children: [
+                  Text(emoji, style: const TextStyle(fontSize: 24)),
+                  const SizedBox(height: 6),
+                  Text(label, textAlign: TextAlign.center, style: T.display(12.5, weight: FontWeight.w800, spacing: 0)),
+                ],
+              ),
+            ),
+          ),
+        );
+    return _whiteCard(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      padding: const EdgeInsets.all(14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('FRESH NONSENSE',
+              style: T.display(11.5, color: AppColors.muted2, weight: FontWeight.w800, spacing: 0.5)),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              btn('🧓', 'Ask the\nUncle', () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const UncleChatScreen()))),
+              const SizedBox(width: 10),
+              btn('🔥', 'Roast my\ncommute', () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const RoastScreen()))),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _arrivalsHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 22, 12, 9),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text('Next arrivals', style: T.display(17, weight: FontWeight.w900, spacing: 0)),
+          Row(
+            children: [
+              Text('allegedly', style: T.body(12, color: AppColors.muted2, style: FontStyle.italic)),
+              IconButton(
+                tooltip: 'Generate fresh nonsense',
+                onPressed: _loadingBoard ? null : _refreshBoard,
+                icon: _loadingBoard
+                    ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.auto_awesome, size: 19, color: AppColors.purple),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   // ---- predictor -----------------------------------------------------------
 
   Widget _predictorCard() {
-    final late = FakeData.latePredictions[_lateIdx % FakeData.latePredictions.length];
+    final fallback = FakeData.latePredictions[_lateIdx % FakeData.latePredictions.length];
+    final mins = _aiLate?.mins ?? fallback.mins;
+    final confidence = _aiLate?.confidence ?? fallback.confidence;
+    final note = _aiLate?.note ?? fallback.note;
     return _whiteCard(
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
@@ -138,7 +264,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(late.mins, style: T.display(58, color: AppColors.red, weight: FontWeight.w900, spacing: -1).copyWith(height: 0.82)),
+              Text(mins, style: T.display(58, color: AppColors.red, weight: FontWeight.w900, spacing: -1).copyWith(height: 0.82)),
               const SizedBox(width: 9),
               Padding(
                 padding: const EdgeInsets.only(bottom: 7),
@@ -152,8 +278,8 @@ class _HomeScreenState extends State<HomeScreen> {
               style: T.body(12.5, color: AppColors.inkSoft),
               children: [
                 const TextSpan(text: 'Confidence: '),
-                TextSpan(text: late.confidence, style: T.body(12.5, color: AppColors.ink, weight: FontWeight.w800)),
-                TextSpan(text: ' · ${late.note}'),
+                TextSpan(text: confidence, style: T.body(12.5, color: AppColors.ink, weight: FontWeight.w800)),
+                TextSpan(text: ' · $note'),
               ],
             ),
           ),
@@ -161,7 +287,7 @@ class _HomeScreenState extends State<HomeScreen> {
           SizedBox(
             width: double.infinity,
             child: OutlinedButton(
-              onPressed: () => setState(() => _lateIdx++),
+              onPressed: _loadingLate ? null : _recalcLate,
               style: OutlinedButton.styleFrom(
                 backgroundColor: AppColors.cream,
                 foregroundColor: AppColors.ink,
@@ -169,7 +295,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 11),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: Text('Recalculate ↻', style: T.display(13, weight: FontWeight.w700, spacing: 0)),
+              child: _loadingLate
+                  ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                  : Text('Recalculate ↻', style: T.display(13, weight: FontWeight.w700, spacing: 0)),
             ),
           ),
         ],
@@ -283,11 +411,13 @@ class _HomeScreenState extends State<HomeScreen> {
   // ---- bus + review cards --------------------------------------------------
 
   Widget _busCard(BusItem b, int i) {
+    final ai = (!_breakdown && _aiArrivals != null && i < _aiArrivals!.length) ? _aiArrivals![i] : null;
     final tagBg = _breakdown ? AppColors.tagPurpleBg : AppColors.tagRedBg;
     final tagFg = _breakdown ? AppColors.tagPurpleFg : AppColors.tagRedFg;
-    final verdict = _breakdown ? 'SUSPENDED' : b.verdict;
-    final sub = _breakdown ? FakeData.susSubs[i % FakeData.susSubs.length] : b.sub;
-    final times = _breakdown ? '—' : b.times;
+    final dest = _breakdown ? b.dest : (ai?.dest ?? b.dest);
+    final verdict = _breakdown ? 'SUSPENDED' : (ai?.verdict ?? b.verdict);
+    final sub = _breakdown ? FakeData.susSubs[i % FakeData.susSubs.length] : (ai?.sub ?? b.sub);
+    final times = _breakdown ? '—' : (ai?.times ?? b.times);
     final timeColor = _breakdown ? AppColors.faint : b.timeColor;
 
     return _whiteCard(
@@ -311,7 +441,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(b.dest, style: T.body(14.5, weight: FontWeight.w800)),
+                Text(dest, style: T.body(14.5, weight: FontWeight.w800)),
                 const SizedBox(height: 4),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -374,19 +504,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ---- helpers -------------------------------------------------------------
-
-  Widget _sectionRow(String title, String aside) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(18, 22, 18, 9),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(title, style: T.display(17, weight: FontWeight.w900, spacing: 0)),
-          Text(aside, style: T.body(12, color: AppColors.muted2, style: FontStyle.italic)),
-        ],
-      ),
-    );
-  }
 
   Widget _whiteCard({required Widget child, EdgeInsets? margin, required EdgeInsets padding}) {
     return Container(

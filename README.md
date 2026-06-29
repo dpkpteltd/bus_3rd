@@ -12,9 +12,33 @@ tissue packet, a "live" map where the bus drives into the sea, and prank notific
 - **Chope a seat** — tap empty seats to reserve them; random "aunties" steal seats over time.
 - **Live Map™** — a hand-painted (no Google Maps / no API key) map with a wandering bus.
 - **Prank notifications** — local-only funny alerts you can trigger from *More → Send a prank now*.
+- **AI nonsense (optional)** — never-repeating gags, an "Ask the Uncle" chatbot, a "Roast my
+  commute" forecast, and a personalized Give Up certificate. See **AI integration** below.
 
-Front-end only: no backend, no accounts, no analytics, no ads, no location. Settings persist
-locally via `shared_preferences`.
+Settings persist locally via `shared_preferences`.
+
+## AI integration (optional, opt-in)
+The app ships **fully offline by default** — no backend, no accounts, no analytics, no location.
+An optional online mode adds AI-generated comedy, powered by **MiniMax** behind a **Supabase
+Edge Function**:
+
+- **Three-layer fallback** (`lib/services/ai/`): live AI → on-device template generator →
+  the original static lists, so the app never breaks offline.
+- **No key in the app.** A stateless **Supabase Edge Function** (`supabase/functions/ai/`) holds
+  the MiniMax API key and exposes one endpoint with four actions
+  (`gags`, `uncle`, `roast`, `certificate`). The app authenticates with the publishable
+  Supabase **anon key**; the MiniMax key never leaves the function's secrets.
+- **Opt-in.** Online mode is **off by default**, gated behind a settings toggle
+  (*About → Online jokes*). When off, nothing leaves the device.
+
+Deploy the function + set the MiniMax secret (see `supabase/README.md`), then run with your
+project wired in:
+```bash
+flutter run \
+  --dart-define=BUS3RD_SUPABASE_URL=https://<project-ref>.supabase.co \
+  --dart-define=BUS3RD_SUPABASE_ANON_KEY=<your anon key>
+```
+With no `--dart-define`, the toggle is hidden and the app behaves exactly as the offline original.
 
 ## Project layout
 ```
@@ -56,7 +80,12 @@ Designed to pass review as an **Entertainment** app (not Navigation/Travel).
 - [ ] Host a privacy policy page and wire its URL into `lib/screens/about_screen.dart`
       (search for the `TODO`). Apple requires a privacy policy URL even though we collect nothing.
 - [ ] Store listing copy must say it's a **parody / comedy** app; category = **Entertainment**.
-- [ ] Declare **"Data Not Collected"** on both App Store Connect and Play Console.
+- [ ] **Data collection declaration depends on whether you ship online AI mode:**
+      - **Offline only** (don't compile in `BUS3RD_SUPABASE_URL`): declare **"Data Not Collected"** as before.
+      - **With online AI mode:** typed text is sent to a third party (your Supabase Edge Function →
+        MiniMax) to generate jokes. Declare it accordingly — Play Console *Data safety* and App Store Connect
+        *App Privacy* should list "User content" used for **App functionality**, not linked to identity,
+        not used for tracking. Update your hosted privacy policy to match `kPrivacyStatement`.
 - [ ] No real operator names/logos/route numbers anywhere (keep the fictional brand).
 
 ### Android (buildable on Windows)
