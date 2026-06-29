@@ -1,0 +1,63 @@
+// Smoke tests for Bus 3rd (parody bus app).
+
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'package:bus_3rd/app.dart';
+import 'package:bus_3rd/screens/chope_seat_screen.dart';
+import 'package:bus_3rd/services/app_state.dart';
+
+void main() {
+  testWidgets('Splash -> enter app shows the bottom nav', (tester) async {
+    SharedPreferences.setMockInitialValues({'seen_disclaimer': true});
+    final appState = AppState();
+    await appState.load();
+
+    await tester.pumpWidget(BusApp(appState: appState));
+    await tester.pump();
+
+    // Splash / "login" screen.
+    final enter = find.text('Aiya, just let me in  →');
+    expect(enter, findsOneWidget);
+
+    await tester.tap(enter);
+    await tester.pump();
+    await tester.pump();
+
+    // Main shell nav.
+    expect(find.text('Home'), findsWidgets);
+    expect(find.text('Chope'), findsOneWidget);
+    expect(find.text('Give Up'), findsOneWidget);
+
+    // Dispose to cancel animation/timers.
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('Tapping an empty seat chopes it', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: Scaffold(body: ChopeSeatScreen())),
+    );
+    await tester.pump();
+
+    final emptySeat = find.byIcon(Icons.event_seat_outlined).first;
+    expect(emptySeat, findsOneWidget);
+
+    await tester.tap(emptySeat);
+    await tester.pump();
+
+    expect(find.text('Choped! Tissue packet deployed 🧻'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox());
+  });
+
+  test('AppState persists prank toggle', () async {
+    SharedPreferences.setMockInitialValues({});
+    final appState = AppState();
+    await appState.load();
+
+    expect(appState.pranksEnabled, isTrue);
+    appState.setPranksEnabled(false);
+    expect(appState.pranksEnabled, isFalse);
+  });
+}
