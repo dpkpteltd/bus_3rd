@@ -9,8 +9,6 @@ import '../services/ai/ai_service.dart';
 import '../theme/app_theme.dart';
 import '../widgets/app_header.dart';
 import 'about_screen.dart';
-import 'roast_screen.dart';
-import 'uncle_chat_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -44,10 +42,12 @@ class _HomeScreenState extends State<HomeScreen> {
       _loadingLate = true;
     });
     final p = await AiService.instance.latePrediction();
-    if (mounted) setState(() {
-      _aiLate = p;
-      _loadingLate = false;
-    });
+    if (mounted) {
+      setState(() {
+        _aiLate = p;
+        _loadingLate = false;
+      });
+    }
   }
 
   Future<void> _refreshBoard() async {
@@ -55,11 +55,13 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() => _loadingBoard = true);
     final arrivals = await AiService.instance.arrivals(count: FakeData.buses.length);
     final reviews = await AiService.instance.reviews(count: FakeData.reviews.length);
-    if (mounted) setState(() {
-      _aiArrivals = arrivals;
-      _aiReviews = reviews;
-      _loadingBoard = false;
-    });
+    if (mounted) {
+      setState(() {
+        _aiArrivals = arrivals;
+        _aiReviews = reviews;
+        _loadingBoard = false;
+      });
+    }
   }
 
   List<Review> get _currentReviews {
@@ -111,7 +113,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 _feedCard(),
               ] else
                 _predictorCard(),
-              _aiHubCard(context),
               _arrivalsHeader(),
               for (var i = 0; i < FakeData.buses.length; i++)
                 Padding(
@@ -170,53 +171,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  // ---- AI hub ----------------------------------------------------------------
-
-  Widget _aiHubCard(BuildContext context) {
-    Widget btn(String emoji, String label, VoidCallback onTap) => Expanded(
-          child: InkWell(
-            borderRadius: BorderRadius.circular(14),
-            onTap: onTap,
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              decoration: BoxDecoration(
-                color: AppColors.cream,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.black.withValues(alpha: 0.06)),
-              ),
-              child: Column(
-                children: [
-                  Text(emoji, style: const TextStyle(fontSize: 24)),
-                  const SizedBox(height: 6),
-                  Text(label, textAlign: TextAlign.center, style: T.display(12.5, weight: FontWeight.w800, spacing: 0)),
-                ],
-              ),
-            ),
-          ),
-        );
-    return _whiteCard(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      padding: const EdgeInsets.all(14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('FRESH NONSENSE',
-              style: T.display(11.5, color: AppColors.muted2, weight: FontWeight.w800, spacing: 0.5)),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              btn('🧓', 'Ask the\nUncle', () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const UncleChatScreen()))),
-              const SizedBox(width: 10),
-              btn('🔥', 'Roast my\ncommute', () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const RoastScreen()))),
-            ],
-          ),
-        ],
       ),
     );
   }

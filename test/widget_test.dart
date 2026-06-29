@@ -10,7 +10,8 @@ import 'package:bus_3rd/services/app_state.dart';
 
 void main() {
   testWidgets('Splash -> enter app shows the bottom nav', (tester) async {
-    SharedPreferences.setMockInitialValues({'seen_disclaimer': true});
+    // ai_online:false keeps the smoke test fully offline (no live backend call).
+    SharedPreferences.setMockInitialValues({'seen_disclaimer': true, 'ai_online': false});
     final appState = AppState();
     await appState.load();
 

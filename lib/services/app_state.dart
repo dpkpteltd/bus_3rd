@@ -14,8 +14,9 @@ class AppState extends ChangeNotifier {
 
   bool _pranksEnabled = true;
   bool _seenDisclaimer = false;
-  // Off by default: the app stays fully offline until the user opts in.
-  bool _aiOnline = false;
+  // On by default so the AI features work out of the box. Users can turn this
+  // off in About to make the app fully offline again.
+  bool _aiOnline = true;
 
   bool get pranksEnabled => _pranksEnabled;
   bool get seenDisclaimer => _seenDisclaimer;
@@ -31,7 +32,7 @@ class AppState extends ChangeNotifier {
     final p = _prefs!;
     _pranksEnabled = p.getBool(_kPranks) ?? true;
     _seenDisclaimer = p.getBool(_kSeenDisclaimer) ?? false;
-    _aiOnline = p.getBool(_kAiOnline) ?? false;
+    _aiOnline = p.getBool(_kAiOnline) ?? true;
     AiService.instance.online = _aiOnline;
     notifyListeners();
   }

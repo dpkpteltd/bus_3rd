@@ -19,11 +19,19 @@
 class AiConfig {
   AiConfig._();
 
-  static const String supabaseUrl =
-      String.fromEnvironment('BUS3RD_SUPABASE_URL', defaultValue: '');
+  // Defaults point at the live Bus 3rd project so the app works out of the box.
+  // The anon/publishable key is designed to be shipped in clients; the MiniMax
+  // key stays server-side in the Edge Function's secrets. Override either with
+  // --dart-define for a different environment.
+  static const String supabaseUrl = String.fromEnvironment(
+    'BUS3RD_SUPABASE_URL',
+    defaultValue: 'https://jdaxxtnwczdijfsabuzl.supabase.co',
+  );
 
-  static const String supabaseAnonKey =
-      String.fromEnvironment('BUS3RD_SUPABASE_ANON_KEY', defaultValue: '');
+  static const String supabaseAnonKey = String.fromEnvironment(
+    'BUS3RD_SUPABASE_ANON_KEY',
+    defaultValue: 'sb_publishable_WCHRDtmxMN4xqNwOuFCUMA_TYkln9dE',
+  );
 
   /// Full URL of the `ai` Edge Function.
   static String get functionUrl => '$supabaseUrl/functions/v1/ai';

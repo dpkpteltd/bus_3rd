@@ -23,18 +23,33 @@ class _FakeMapScreenState extends State<FakeMapScreen>
       AnimationController(vsync: this, duration: const Duration(seconds: 14))
         ..repeat();
   Timer? _captionTimer;
-  String _caption = FakeData.randomMapGag();
+  // A growable pool of captions; rotated locally so we don't hit the model on a
+  // 4-second loop. One live caption is fetched once when the tab first loads.
+  final List<String> _pool = [...FakeData.mapGags];
+  int _i = 0;
+  late String _caption = _pool[0];
 
   @override
   void initState() {
     super.initState();
-    _refreshCaption();
-    _captionTimer = Timer.periodic(const Duration(seconds: 4), (_) => _refreshCaption());
+    _seedFreshCaption();
+    _captionTimer = Timer.periodic(const Duration(seconds: 4), (_) => _rotateCaption());
   }
 
-  Future<void> _refreshCaption() async {
+  void _rotateCaption() {
+    if (!mounted) return;
+    setState(() => _caption = _pool[++_i % _pool.length]);
+  }
+
+  /// One-time enrichment: pull a single fresh (AI, if online) caption and show
+  /// it first. Falls back silently to the local pool if AI is off/unavailable.
+  Future<void> _seedFreshCaption() async {
     final gag = await AiService.instance.mapGag();
-    if (mounted) setState(() => _caption = gag);
+    if (!mounted) return;
+    setState(() {
+      _pool.insert(0, gag);
+      _caption = gag;
+    });
   }
 
   @override

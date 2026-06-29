@@ -152,8 +152,11 @@ async function handleUncle(payload: any): Promise<Response> {
       role: m.role === 'assistant' ? ('assistant' as const) : ('user' as const),
       content: String(m.text).slice(0, 800),
     }));
-  if (turns.length === 0 || turns[0].role !== 'user') {
-    return json({ error: 'messages must start with a user turn' }, 400);
+  // A leading assistant turn (e.g. the uncle's opening greeting) is fine — just
+  // drop any non-user turns at the front so the conversation starts with the user.
+  while (turns.length && turns[0].role !== 'user') turns.shift();
+  if (turns.length === 0) {
+    return json({ error: 'no user message provided' }, 400);
   }
 
   const text = await callMiniMax(

@@ -49,3 +49,8 @@ supabase/.temp/
 supabase/.branches/
 supabase/.env.local
 **/.env
+
+# Signing — NEVER commit the keystore or its passwords
+/android/key.properties
+**/*.jks
+**/*.keystore

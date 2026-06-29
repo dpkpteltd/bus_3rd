@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 
 import 'screens/about_screen.dart';
+import 'screens/ai_hub_screen.dart';
 import 'screens/chope_seat_screen.dart';
 import 'screens/fake_map_screen.dart';
 import 'screens/give_up_screen.dart';
 import 'screens/home_screen.dart';
-import 'screens/saved_screen.dart';
 import 'screens/splash_screen.dart';
 import 'services/app_state.dart';
 import 'theme/app_theme.dart';
@@ -49,7 +49,7 @@ class _RootGateState extends State<RootGate> {
   }
 }
 
-/// Bottom-navigation shell. Tabs: Home, Map, Chope, Saved, Give Up.
+/// Bottom-navigation shell. Tabs: Home, Map, AI, Chope, Give Up.
 class RootShell extends StatefulWidget {
   const RootShell({super.key});
 
@@ -109,8 +109,8 @@ class _RootShellState extends State<RootShell> {
     final pages = [
       const HomeScreen(),
       const FakeMapScreen(),
+      const AiHubScreen(),
       const ChopeSeatScreen(),
-      const SavedScreen(),
       GiveUpScreen(key: ValueKey(_giveUpKey), onGoHome: _goHome),
     ];
     return Scaffold(
@@ -130,8 +130,8 @@ class _BusNavBar extends StatelessWidget {
   static const _items = [
     (Icons.home_outlined, Icons.home, 'Home'),
     (Icons.map_outlined, Icons.map, 'Map'),
+    (Icons.auto_awesome_outlined, Icons.auto_awesome, 'AI'),
     (Icons.event_seat_outlined, Icons.event_seat, 'Chope'),
-    (Icons.bookmark_outline, Icons.bookmark, 'Saved'),
     (Icons.flag_outlined, Icons.flag, 'Give Up'),
   ];
 

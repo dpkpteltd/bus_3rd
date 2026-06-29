@@ -79,7 +79,13 @@ class LiveAiClient {
   }
 
   Future<String> uncle(List<UncleTurn> history) async {
-    final j = await _call('uncle', {'messages': history.map((t) => t.toJson()).toList()});
+    // Drop any leading assistant turns (e.g. the uncle's opening greeting) so the
+    // conversation sent to the model starts with a user message.
+    final trimmed = [...history];
+    while (trimmed.isNotEmpty && !trimmed.first.fromUser) {
+      trimmed.removeAt(0);
+    }
+    final j = await _call('uncle', {'messages': trimmed.map((t) => t.toJson()).toList()});
     final text = (j['text'] ?? '') as String;
     if (text.trim().isEmpty) throw const FormatException('empty uncle reply');
     return text.trim();
