@@ -40,5 +40,6 @@ class AiConfig {
   static bool get isConfigured => supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty;
 
   /// How long to wait on the network before falling back to on-device gags.
-  static const Duration timeout = Duration(seconds: 8);
+  /// MiniMax can take several seconds, so keep this generous.
+  static const Duration timeout = Duration(seconds: 20);
 }
