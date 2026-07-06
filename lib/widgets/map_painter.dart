@@ -31,8 +31,9 @@ class SgMapPainter extends CustomPainter {
 
   static const Size world = Size(1400, 1000);
 
-  /// Bounding box of the main island — the view fits to this and the bus roams it.
-  static const Rect islandBounds = Rect.fromLTRB(110, 210, 970, 690);
+  /// Bounding box the view fits to (includes JB up north so it's on-screen but
+  /// doesn't overflow). The bus still roams the main island.
+  static const Rect islandBounds = Rect.fromLTRB(110, 120, 970, 700);
 
   // ---- colours ----
   static const _sea = Color(0xFF9FD4EA);
@@ -62,9 +63,23 @@ class SgMapPainter extends CustomPainter {
     Offset(512, 788), Offset(448, 776),
   ];
 
+  // Northern landmass — JB, across the Causeway (always jammed).
+  static const List<Offset> _jbOutline = [
+    Offset(180, 40), Offset(320, 12), Offset(470, 4), Offset(630, 10),
+    Offset(780, 20), Offset(910, 48), Offset(1000, 92), Offset(940, 138),
+    Offset(800, 152), Offset(650, 156), Offset(500, 152), Offset(360, 142),
+    Offset(250, 118), Offset(168, 82),
+  ];
+
   static final Path island = _smoothClosed(_outline);
   static final Path tekong = _smoothClosed(_tekongOutline);
   static final Path sentosa = _smoothClosed(_sentosaOutline);
+  static final Path jb = _smoothClosed(_jbOutline);
+
+  /// The northern JB zone. Drag the bus in here and it snaps to the Causeway and
+  /// gets stuck in the jam until dragged back out.
+  static const Rect jbZone = Rect.fromLTRB(230, 0, 970, 188);
+  static const Offset bridgePoint = Offset(462, 196);
 
   // ---- towns: (position, name, Singlish sub-label) ----
   static const List<(Offset, String, String)> _towns = [
@@ -135,7 +150,6 @@ class SgMapPainter extends CustomPainter {
     Offset(880, 180), Offset(1000, 120),
   ];
 
-  static const List<Offset> _clouds = [Offset(120, 90), Offset(250, 130)];
 
   static ui.Picture? _scene;
 
@@ -165,9 +179,6 @@ class SgMapPainter extends CustomPainter {
     for (final w in _waves) {
       _wave(c, w);
     }
-    for (final cl in _clouds) {
-      _cloud(c, cl);
-    }
 
     // Landmasses.
     final landPaint = Paint()..color = _land;
@@ -175,10 +186,13 @@ class SgMapPainter extends CustomPainter {
       ..color = _coast
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3;
-    for (final p in [island, tekong, sentosa]) {
+    for (final p in [island, tekong, sentosa, jb]) {
       c.drawPath(p, landPaint);
       c.drawPath(p, coastPaint);
     }
+
+    // The Causeway to JB (perpetually jammed).
+    _causeway(c);
 
     // Tekong training pond.
     c.drawOval(Rect.fromCenter(center: const Offset(1180, 250), width: 90, height: 44),
@@ -217,6 +231,7 @@ class SgMapPainter extends CustomPainter {
 
     // Tekong title.
     _bigLabel(c, const Offset(1120, 170), 'Tekong', 'Confirm book in');
+    _bigLabel(c, const Offset(430, 46), 'JB', 'Jam Bridge');
 
     // Town labels.
     for (final (pos, name, sub) in _towns) {
@@ -253,15 +268,27 @@ class SgMapPainter extends CustomPainter {
     }
   }
 
-  static void _cloud(Canvas c, Offset at) {
-    final paint = Paint()..color = Colors.white.withValues(alpha: 0.9);
-    c.drawCircle(at, 26, paint);
-    c.drawCircle(at + const Offset(34, 6), 22, paint);
-    c.drawCircle(at + const Offset(-30, 8), 20, paint);
-    c.drawRRect(
-      RRect.fromRectAndRadius(Rect.fromLTWH(at.dx - 46, at.dy + 6, 96, 26), const Radius.circular(16)),
-      paint,
-    );
+  static void _causeway(Canvas c) {
+    final road = Paint()
+      ..color = const Color(0xFFCBB68C)
+      ..strokeWidth = 18
+      ..strokeCap = StrokeCap.round;
+    c.drawLine(const Offset(460, 150), const Offset(460, 240), road);
+    final lane = Paint()
+      ..color = Colors.white70
+      ..strokeWidth = 2;
+    for (var y = 158.0; y < 236; y += 12) {
+      c.drawLine(Offset(460, y), Offset(460, y + 6), lane);
+    }
+    // Cars queued in the jam.
+    const cars = [Color(0xFFE2231A), Color(0xFF3D6FB4), Color(0xFFEFC94C), Color(0xFF37474F), Color(0xFFE2231A)];
+    var y = 160.0;
+    for (var i = 0; i < cars.length; i++) {
+      final x = 460 + (i.isEven ? -4.5 : 4.5);
+      c.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(x - 4, y, 8, 12), const Radius.circular(2)),
+          Paint()..color = cars[i]);
+      y += 15;
+    }
   }
 
   static void _tree(Canvas c, Offset at) {
@@ -401,7 +428,8 @@ class SgMapPainter extends CustomPainter {
 
     final atSea = !island.contains(busPos) &&
         !tekong.contains(busPos) &&
-        !sentosa.contains(busPos);
+        !sentosa.contains(busPos) &&
+        !jb.contains(busPos);
     _drawBus(canvas, busPos, heading, atSea);
     canvas.restore();
   }

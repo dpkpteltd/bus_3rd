@@ -32,7 +32,7 @@ class _FakeMapScreenState extends State<FakeMapScreen>
   Offset _target = const Offset(540, 450);
   double _heading = 0;
   double _propellerSpin = 0; // spins while the bus is boating through the sea
-  static const double _speed = 78; // world units / second
+  static const double _speed = 156; // world units / second
 
   // Camera.
   double _zoom = 1.0; // multiplier over the "fit whole island" scale
@@ -45,6 +45,9 @@ class _FakeMapScreenState extends State<FakeMapScreen>
   // Dragging the bus.
   bool _dragging = false;
   Offset _grabOffset = Offset.zero;
+
+  // Stuck on the Causeway to JB.
+  bool _stuck = false;
 
   // Caption bubble.
   Timer? _captionTimer;
@@ -75,9 +78,9 @@ class _FakeMapScreenState extends State<FakeMapScreen>
   void _onTick(Duration elapsed) {
     final dt = ((elapsed - _last).inMicroseconds / 1e6).clamp(0.0, 0.05);
     _last = elapsed;
-    // While the user is dragging the bus, it's finger-controlled — pause the
-    // auto-wander and the follow camera.
-    if (!_dragging) {
+    // While the user is dragging (or the bus is stuck in the JB jam), it's not
+    // free-wandering — pause the auto-wander and the follow camera.
+    if (!_dragging && !_stuck) {
       _stepBus(dt);
       if (_follow) {
         _camCenter = Offset.lerp(_camCenter, _busPos, (dt * 3).clamp(0.0, 1.0))!;
@@ -97,13 +100,37 @@ class _FakeMapScreenState extends State<FakeMapScreen>
     if (_busVel.distance > 2) _heading = atan2(_busVel.dy, _busVel.dx);
   }
 
+  /// Snap the bus onto the Causeway and jam it up until it's dragged back out.
+  void _enterJam() {
+    final wasStuck = _stuck;
+    _busPos = SgMapPainter.bridgePoint;
+    _busVel = Offset.zero;
+    _stuck = true;
+    if (!wasStuck && mounted) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(
+          content: Text('🚗 Bus is stuck in Jam. Drag it back to the sea to escape!'),
+          duration: Duration(milliseconds: 1900),
+        ));
+    }
+  }
+
   void _pickTarget() {
-    if (_rng.nextInt(7) == 0) {
-      // Occasionally wander off into the sea, for comedy.
-      _target = Offset(_rng.nextDouble() * SgMapPainter.world.width,
-          _rng.nextDouble() * SgMapPainter.world.height);
+    // ~90% of the time it heads for Tekong or the open sea (it's a boat at heart),
+    // ~10% back onto the main island.
+    if (_rng.nextInt(10) != 0) {
+      if (_rng.nextBool()) {
+        // Towards Pulau Tekong (right side).
+        _target = Offset(1010 + _rng.nextDouble() * 340, 180 + _rng.nextDouble() * 330);
+      } else {
+        // Somewhere out in the open water — but south of the JB jam zone so it
+        // doesn't drive itself into the Causeway.
+        _target = Offset(_rng.nextDouble() * SgMapPainter.world.width,
+            210 + _rng.nextDouble() * (SgMapPainter.world.height - 210));
+      }
     } else {
-      // Somewhere on/around the main island.
+      // Back onto the main island.
       _target = Offset(170 + _rng.nextDouble() * 720, 270 + _rng.nextDouble() * 360);
     }
   }
@@ -136,9 +163,15 @@ class _FakeMapScreenState extends State<FakeMapScreen>
     if (!_dragging) return;
     setState(() {
       final w = _screenToWorld(d.localPosition) + _grabOffset;
-      final delta = w - _busPos;
-      if (delta.distance > 0.5) _heading = atan2(delta.dy, delta.dx);
-      _busPos = w;
+      if (SgMapPainter.jbZone.contains(w)) {
+        // Heading into JB → snap to the Causeway and jam up.
+        _enterJam();
+      } else {
+        final delta = w - _busPos;
+        if (delta.distance > 0.5) _heading = atan2(delta.dy, delta.dx);
+        _busPos = w;
+        _stuck = false; // dragged back out of the jam
+      }
     });
   }
 
@@ -147,7 +180,9 @@ class _FakeMapScreenState extends State<FakeMapScreen>
     setState(() {
       _dragging = false;
       _busVel = Offset.zero;
-      _pickTarget(); // resume wandering from wherever it was dropped
+      // If it was dropped in the jam, leave it frozen there until dragged out;
+      // otherwise resume wandering from wherever it landed.
+      if (!_stuck) _pickTarget();
     });
   }
 
@@ -220,15 +255,18 @@ class _FakeMapScreenState extends State<FakeMapScreen>
                 onLongPressEnd: _onLongPressEnd,
                 child: Stack(
                   children: [
+                    // Clip so nothing (e.g. JB up north) bleeds into the header.
                     Positioned.fill(
-                      child: CustomPaint(
-                        painter: SgMapPainter(
-                          busPos: _busPos,
-                          heading: _heading,
-                          scale: _scale,
-                          camCenter: _camCenter,
-                          propellerSpin: _propellerSpin,
-                          grabbed: _dragging,
+                      child: ClipRect(
+                        child: CustomPaint(
+                          painter: SgMapPainter(
+                            busPos: _busPos,
+                            heading: _heading,
+                            scale: _scale,
+                            camCenter: _camCenter,
+                            propellerSpin: _propellerSpin,
+                            grabbed: _dragging,
+                          ),
                         ),
                       ),
                     ),
@@ -287,21 +325,22 @@ class _FakeMapScreenState extends State<FakeMapScreen>
   }
 
   Widget _captionBubble() {
+    final text = _stuck ? 'Bus is stuck in Jam 🚗🚙💤' : _caption;
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 300),
       child: Container(
-        key: ValueKey(_caption),
+        key: ValueKey(_stuck ? '__jam__' : _caption),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: AppColors.ink,
+          color: _stuck ? AppColors.red : AppColors.ink,
           borderRadius: BorderRadius.circular(14),
           boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 10, offset: const Offset(0, 3))],
         ),
         child: Row(
           children: [
-            const Icon(Icons.directions_bus, color: AppColors.amber, size: 20),
+            Icon(_stuck ? Icons.traffic : Icons.directions_bus, color: AppColors.amber, size: 20),
             const SizedBox(width: 12),
-            Expanded(child: Text(_caption, style: T.body(13, color: Colors.white, weight: FontWeight.w600))),
+            Expanded(child: Text(text, style: T.body(13, color: Colors.white, weight: FontWeight.w600))),
           ],
         ),
       ),
