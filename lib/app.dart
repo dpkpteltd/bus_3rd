@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 
 import 'screens/about_screen.dart';
 import 'screens/ai_hub_screen.dart';
-import 'screens/chope_seat_screen.dart';
 import 'screens/fake_map_screen.dart';
 import 'screens/give_up_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/passenger_game_screen.dart';
 import 'screens/splash_screen.dart';
 import 'services/app_state.dart';
 import 'theme/app_theme.dart';
@@ -110,7 +110,7 @@ class _RootShellState extends State<RootShell> {
       const HomeScreen(),
       const FakeMapScreen(),
       const AiHubScreen(),
-      const ChopeSeatScreen(),
+      const PassengerGameScreen(),
       GiveUpScreen(key: ValueKey(_giveUpKey), onGoHome: _goHome),
     ];
     return Scaffold(
