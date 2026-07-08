@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 
 import 'screens/about_screen.dart';
 import 'screens/ai_hub_screen.dart';
+import 'screens/bus_game_screen.dart';
 import 'screens/fake_map_screen.dart';
 import 'screens/give_up_screen.dart';
 import 'screens/home_screen.dart';
-import 'screens/passenger_game_screen.dart';
 import 'screens/splash_screen.dart';
 import 'services/app_state.dart';
 import 'theme/app_theme.dart';
@@ -49,7 +49,7 @@ class _RootGateState extends State<RootGate> {
   }
 }
 
-/// Bottom-navigation shell. Tabs: Home, Map, AI, Chope, Give Up.
+/// Bottom-navigation shell. Tabs: Home, Map, AI, Drive, Give Up.
 class RootShell extends StatefulWidget {
   const RootShell({super.key});
 
@@ -110,7 +110,7 @@ class _RootShellState extends State<RootShell> {
       const HomeScreen(),
       const FakeMapScreen(),
       const AiHubScreen(),
-      const PassengerGameScreen(),
+      const BusGameScreen(),
       GiveUpScreen(key: ValueKey(_giveUpKey), onGoHome: _goHome),
     ];
     return Scaffold(
@@ -131,7 +131,7 @@ class _BusNavBar extends StatelessWidget {
     (Icons.home_outlined, Icons.home, 'Home'),
     (Icons.map_outlined, Icons.map, 'Map'),
     (Icons.auto_awesome_outlined, Icons.auto_awesome, 'AI'),
-    (Icons.event_seat_outlined, Icons.event_seat, 'Chope'),
+    (Icons.directions_bus_outlined, Icons.directions_bus, 'Drive'),
     (Icons.flag_outlined, Icons.flag, 'Give Up'),
   ];
 
